@@ -1,0 +1,13 @@
+{
+    "ignore_patterns": [],
+    "variables": [
+        {
+            "key": "<!Company!>",
+            "value": "Your Company"
+        },
+        {
+            "key": "<!Team!>",
+            "value": "Your Team"
+        }
+    ]
+}

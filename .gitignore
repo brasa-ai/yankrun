@@ -1,0 +1,65 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Output directories
+/clonedRepo
+/build
+/bin
+/demo
+/output
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Dependency directories
+vendor/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Ignore IDE and editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.bak
+*.backup
+*.tmp
+*.DS_Store
+
+# Ignore binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.out
+
+# Ignore generated files
+*.gen.*
+
+# Ignore configuration files
+*.env
+
+# Ignore compiled Python files
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore node_modules directory
+node_modules/
+
+# Ignore system files
+Thumbs.db
+Desktop.ini
+.DS_Store
