@@ -1,7 +1,7 @@
 # YankRun
 
 <div align="center">
-  <img src="images/yankrun.jpg" alt="YankRun" width="200">
+  <img src="doc/logo.png" alt="YankRun" width="200">
   <p>
     <img src="https://img.shields.io/badge/Go-1.22%2B-00ADD8?style=flat-square&logo=go" alt="Go Version">
     <img src="https://img.shields.io/badge/OS-Linux%20%7C%20macOS%20%7C%20Windows-darkblue?style=flat-square&logo=windows" alt="OS Support">
@@ -18,7 +18,7 @@ Template smarter: clone repos and replace tokens safely with size limits, custom
 <summary><strong>Linux/macOS (AMD64)</strong></summary>
 
 ```sh
-curl -L https://github.com/AxeByte/yankrun.axebyte/releases/download/stable/yankrun-linux-amd64.tar.gz -o yankrun-linux-amd64.tar.gz
+curl -L https://github.com/brasa-ai/yankrun/releases/download/stable/yankrun-linux-amd64.tar.gz -o yankrun-linux-amd64.tar.gz
 tar -xvf yankrun-linux-amd64.tar.gz yankrun-linux-amd64
 chmod +x yankrun-linux-amd64
 sudo mv yankrun-linux-amd64 /usr/local/bin/yankrun
@@ -30,7 +30,7 @@ sudo mv yankrun-linux-amd64 /usr/local/bin/yankrun
 <summary><strong>Linux/macOS (ARM64)</strong></summary>
 
 ```sh
-curl -L https://github.com/AxeByte/yankrun.axebyte/releases/download/stable/yankrun-linux-arm64.tar.gz -o yankrun-linux-arm64.tar.gz
+curl -L https://github.com/brasa-ai/yankrun/releases/download/stable/yankrun-linux-arm64.tar.gz -o yankrun-linux-arm64.tar.gz
 tar -xvf yankrun-linux-arm64.tar.gz yankrun-linux-arm64
 chmod +x yankrun-linux-arm64
 sudo mv yankrun-linux-arm64 /usr/local/bin/yankrun
@@ -42,7 +42,7 @@ sudo mv yankrun-linux-arm64 /usr/local/bin/yankrun
 <summary><strong>Windows (PowerShell)</strong></summary>
 
 ```powershell
-Invoke-WebRequest -Uri https://github.com/AxeByte/yankrun.axebyte/releases/download/stable/yankrun-windows-amd64.zip -OutFile yankrun-windows-amd64.zip
+Invoke-WebRequest -Uri https://github.com/brasa-ai/yankrun/releases/download/stable/yankrun-windows-amd64.zip -OutFile yankrun-windows-amd64.zip
 Expand-Archive -Path yankrun-windows-amd64.zip -DestinationPath .
 Move-Item -Path yankrun-windows-amd64/yankrun-windows-amd64.exe -Destination yankrun.exe
 ```
@@ -54,7 +54,7 @@ Move-Item -Path yankrun-windows-amd64/yankrun-windows-amd64.exe -Destination yan
 <summary><strong>Build locally</strong></summary>
 
 ```sh
-git clone https://github.com/AxeByte/yankrun.axebyte.git
+git clone https://github.com/brasa-ai/yankrun.git
 cd yankrun.axebyte
 go build -o yankrun .
 sudo mv yankrun /usr/local/bin/
@@ -63,7 +63,7 @@ sudo mv yankrun /usr/local/bin/
 Or install with Go:
 
 ```sh
-go install github.com/AxeByte/yankrun.axebyte@latest
+go install github.com/brasa-ai/yankrun@latest
 ```
 
 </details>
@@ -71,23 +71,37 @@ go install github.com/AxeByte/yankrun.axebyte@latest
 ## Usage
 
 <details>
-<summary><strong>Clone & replace</strong></summary>
+<summary><strong>Clone & replace (interactive and non-interactive)</strong></summary>
 
 ```sh
+# Non-interactive: provide values via -i
 yankrun clone \
-  -r https://github.com/user/repo.git \
-  -i example.json \
+  -r https://github.com/brasa-ai/template-tester.git \
+  -i examples/values.json \
   -od ./clonedRepo \
   -v
+
+# Interactive: prompt for discovered placeholders after clone
+yankrun clone \
+  -r git@github.com:brasa-ai/template-tester.git \
+  -od ./clonedRepo \
+  -p -v
 ```
+
+What it does:
+- Clones the repository
+- Scans for placeholders between your delimiters (defaults: `[[{[`, `]}]]`)
+- If `-p/--prompt` is set, shows a summary and prompts for values; otherwise uses values from `-i` if provided
+- Applies replacements and logs completion
 
 Options:
 - `-r, --repo`: Git URL to clone
-- `-i, --input`: JSON/YAML with variables and ignore patterns
+- `-i, --input`: JSON/YAML with variables (used in non-interactive or as defaults in interactive)
 - `-od, --outputDir`: directory to clone into
 - `-fl, --fileSizeLimit`: skip files larger than this (default `3 mb`)
 - `-sd, --startDelim`: template start delimiter (default `[[{[`)
 - `-ed, --endDelim`: template end delimiter (default `]}]]`)
+- `-p, --prompt` (alias: `--interactive`): ask for values before applying
 
 </details>
 
@@ -96,10 +110,10 @@ Options:
 
 ```sh
 # Analyze placeholders and prompt for values
-yankrun template -d ./target-dir -p
+yankrun template -d ./examples/project -p
 
-# Use defaults or overrides
-yankrun template -d ./target-dir -i example.yaml -sd "[[{" -ed "}]]" -fl "5 mb" -p -v
+# Use defaults or overrides (YAML values)
+yankrun template -d ./examples/project -i examples/values.yaml -sd "[[{" -ed "}]]" -fl "5 mb" -p -v
 ```
 
 What it does:
@@ -149,7 +163,7 @@ file_size_limit: 3 mb
 ## Input file format
 
 <details>
-<summary><strong>JSON</strong></summary>
+<summary><strong>JSON</strong> (see `examples/values.json` in the tester repo)</summary>
 
 ```json
 {
@@ -168,7 +182,7 @@ Notes:
 </details>
 
 <details>
-<summary><strong>YAML</strong></summary>
+<summary><strong>YAML</strong> (see `examples/values.yaml` in the tester repo)</summary>
 
 ```yaml
 ignore_patterns: [node_modules, dist]
@@ -187,7 +201,7 @@ variables:
 <summary><strong>Set custom delimiters per run</strong></summary>
 
 ```sh
-yankrun clone -r <repo> -i example.yaml -od out -sd "[[{" -ed "}]]"
+yankrun clone -r git@github.com:brasa-ai/template-tester.git -i examples/values.yaml -od out -sd "[[{" -ed "}]]"
 ```
 
 </details>
@@ -196,7 +210,7 @@ yankrun clone -r <repo> -i example.yaml -od out -sd "[[{" -ed "}]]"
 <summary><strong>Skip large files</strong></summary>
 
 ```sh
-yankrun clone -r <repo> -i example.json -od out -fl "10 mb"
+yankrun clone -r git@github.com:brasa-ai/template-tester.git -i examples/values.json -od out -fl "10 mb"
 ```
 
 </details>

@@ -7,9 +7,9 @@ import (
     "sort"
     "strings"
 
-    "yankrun/domain"
-    "yankrun/helpers"
-    "yankrun/services"
+    "github.com/brasa-ai/yankrun/domain"
+    "github.com/brasa-ai/yankrun/helpers"
+    "github.com/brasa-ai/yankrun/services"
 
     "github.com/urfave/cli"
 )

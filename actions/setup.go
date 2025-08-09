@@ -8,9 +8,9 @@ import (
     "os"
     "strings"
 
-    "yankrun/domain"
-    "yankrun/helpers"
-    "yankrun/services"
+    "github.com/brasa-ai/yankrun/domain"
+    "github.com/brasa-ai/yankrun/helpers"
+    "github.com/brasa-ai/yankrun/services"
 )
 
 func prompt(r *bufio.Reader, label, def string) string {

@@ -7,7 +7,7 @@ import (
     "github.com/mitchellh/go-homedir"
     "gopkg.in/yaml.v3"
 
-    "yankrun/domain"
+    "github.com/brasa-ai/yankrun/domain"
 )
 
 func configPath() (string, error) {

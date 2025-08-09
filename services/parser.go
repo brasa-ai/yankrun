@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"yankrun/domain"
+    "github.com/brasa-ai/yankrun/domain"
 
 	"gopkg.in/yaml.v3"
 )

@@ -1,9 +1,15 @@
 package actions
 
 import (
-    "yankrun/domain"
-    "yankrun/helpers"
-    "yankrun/services"
+    "bufio"
+    "fmt"
+    "os"
+    "sort"
+    "strings"
+
+    "github.com/brasa-ai/yankrun/domain"
+    "github.com/brasa-ai/yankrun/helpers"
+    "github.com/brasa-ai/yankrun/services"
 
     "github.com/urfave/cli"
 )
@@ -32,6 +38,7 @@ func (a *CloneAction) Execute(c *cli.Context) error {
 	fileSizeLimit := c.String("fileSizeLimit")
     startDelim := c.String("startDelim")
     endDelim := c.String("endDelim")
+    interactive := c.Bool("interactive")
 
     // Load defaults from config when flags not provided
     cfg, _ := services.Load()
@@ -67,18 +74,66 @@ func (a *CloneAction) Execute(c *cli.Context) error {
 
     helpers.Log.Info().Msgf("Cloned into %s", outputDir)
 
-	replacements, err := a.parser.Parse(input)
-	if err != nil {
-		return err
-	}
+    // Parse provided replacements if any
+    var provided domain.InputReplacement
+    if input != "" {
+        var err error
+        provided, err = a.parser.Parse(input)
+        if err != nil {
+            return err
+        }
+    }
 
-    err = a.replacer.ReplaceInDir(outputDir, replacements, fileSizeLimit, startDelim, endDelim, verbose)
+    // Analyze placeholders in cloned directory
+    counts, err := a.replacer.AnalyzeDir(outputDir, fileSizeLimit, startDelim, endDelim)
     if err != nil {
         return err
     }
-    if verbose {
-        helpers.Log.Info().Msg("Templating complete ✔")
+
+    // Build value map from provided input
+    values := map[string]string{}
+    for _, r := range provided.Variables { values[r.Key] = r.Value }
+
+    // If interactive, prompt for each discovered key
+    final := domain.InputReplacement{}
+    if len(counts) > 0 {
+        keys := make([]string, 0, len(counts))
+        for k := range counts { keys = append(keys, k) }
+        sort.Strings(keys)
+
+        helpers.Log.Info().Msg("Discovered placeholders:")
+        for _, k := range keys {
+            v := values[k]
+            if v == "" { v = "(unset)" }
+            fmt.Printf("  %-24s  matches=%-6d  value=%s\n", k, counts[k], v)
+        }
+
+        if interactive {
+            r := bufio.NewReader(os.Stdin)
+            for _, k := range keys {
+                def := values[k]
+                fmt.Printf("Enter value for %s [%s]: ", k, def)
+                s, _ := r.ReadString('\n')
+                s = strings.TrimSpace(s)
+                if s != "" { values[k] = s }
+            }
+            fmt.Println()
+        }
+
+        for _, k := range keys {
+            if v, ok := values[k]; ok && v != "" {
+                final.Variables = append(final.Variables, domain.Replacement{Key: k, Value: v})
+            }
+        }
+    } else {
+        // No discovered keys; use provided values directly
+        final = provided
     }
+
+    if err := a.replacer.ReplaceInDir(outputDir, final, fileSizeLimit, startDelim, endDelim, verbose); err != nil {
+        return err
+    }
+    helpers.Log.Info().Msg("Templating complete ✔")
 
 	return nil
 }

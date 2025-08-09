@@ -4,9 +4,9 @@ import (
     "fmt"
     "os"
 
-    "yankrun/actions"
-    "yankrun/helpers"
-    "yankrun/services"
+    "github.com/brasa-ai/yankrun/actions"
+    "github.com/brasa-ai/yankrun/helpers"
+    "github.com/brasa-ai/yankrun/services"
 
     "github.com/urfave/cli"
 )
@@ -44,7 +44,7 @@ func main() {
 			Name:    "clone",
 			Aliases: []string{"r"},
 			Usage:   "Clone a repo with template file replacements",
-            Flags:   []cli.Flag{repoFlag, inputFlag, outputDirFlag, verboseFlag, fileSizeLimitFlag, startDelimFlag, endDelimFlag},
+            Flags:   []cli.Flag{repoFlag, inputFlag, outputDirFlag, verboseFlag, fileSizeLimitFlag, startDelimFlag, endDelimFlag, interactiveFlag},
 			Action:  cloneAction.Execute,
 		},
         {

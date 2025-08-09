@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"yankrun/domain"
+    "github.com/brasa-ai/yankrun/domain"
 )
 
 type Replacer interface {
