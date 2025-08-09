@@ -1,144 +1,220 @@
 # YankRun
 
 <div align="center">
-  <img src="images/yankrun.jpg" alt="YankRun">
+  <img src="images/yankrun.jpg" alt="YankRun" width="200">
+  <p>
+    <img src="https://img.shields.io/badge/Go-1.22%2B-00ADD8?style=flat-square&logo=go" alt="Go Version">
+    <img src="https://img.shields.io/badge/OS-Linux%20%7C%20macOS%20%7C%20Windows-darkblue?style=flat-square&logo=windows" alt="OS Support">
+    <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
+  </p>
 </div>
 
-YankRun is a powerful CLI tool designed to facilitate template value replacement and repository cloning with template file replacements. Whether you're setting up new environments or managing configuration files, YankRun simplifies the process.
+Template smarter: clone repos and replace tokens safely with size limits, custom delimiters, and JSON/YAML inputs.
 
-## Features
+## Install
 
-- **Template Values**: Easily replace template values in files.
-- **Clone Repositories**: Clone Git repositories and apply template replacements.
-- **Configurable File Size Limit**: Skip files that exceed a specified size during the replacement process.
-- **Verbose Mode**: Get detailed logs of the operations being performed.
-- **Support for YAML and JSON**: Read and parse replacements from both YAML and JSON files.
-- **Flexible Ignoring Patterns**: Specify patterns for files and directories to ignore during the replacement process.
-
-## Installation
-
-To install YankRun, ensure you have Go installed and run the following command:
+### From Release
+<details>
+<summary><strong>Linux/macOS (AMD64)</strong></summary>
 
 ```sh
-go get -u example.com/myapp
+curl -L https://github.com/AxeByte/yankrun.axebyte/releases/download/stable/yankrun-linux-amd64.tar.gz -o yankrun-linux-amd64.tar.gz
+tar -xvf yankrun-linux-amd64.tar.gz yankrun-linux-amd64
+chmod +x yankrun-linux-amd64
+sudo mv yankrun-linux-amd64 /usr/local/bin/yankrun
 ```
+
+</details>
+
+<details>
+<summary><strong>Linux/macOS (ARM64)</strong></summary>
+
+```sh
+curl -L https://github.com/AxeByte/yankrun.axebyte/releases/download/stable/yankrun-linux-arm64.tar.gz -o yankrun-linux-arm64.tar.gz
+tar -xvf yankrun-linux-arm64.tar.gz yankrun-linux-arm64
+chmod +x yankrun-linux-arm64
+sudo mv yankrun-linux-arm64 /usr/local/bin/yankrun
+```
+
+</details>
+
+<details>
+<summary><strong>Windows (PowerShell)</strong></summary>
+
+```powershell
+Invoke-WebRequest -Uri https://github.com/AxeByte/yankrun.axebyte/releases/download/stable/yankrun-windows-amd64.zip -OutFile yankrun-windows-amd64.zip
+Expand-Archive -Path yankrun-windows-amd64.zip -DestinationPath .
+Move-Item -Path yankrun-windows-amd64/yankrun-windows-amd64.exe -Destination yankrun.exe
+```
+
+</details>
+
+### From Source
+<details>
+<summary><strong>Build locally</strong></summary>
+
+```sh
+git clone https://github.com/AxeByte/yankrun.axebyte.git
+cd yankrun.axebyte
+go build -o yankrun .
+sudo mv yankrun /usr/local/bin/
+```
+
+Or install with Go:
+
+```sh
+go install github.com/AxeByte/yankrun.axebyte@latest
+```
+
+</details>
 
 ## Usage
 
-YankRun provides two main commands: `template` and `clone`. Below are the details and examples for each command.
-
 <details>
-<summary><strong>Template Command</strong></summary>
-
-The `template` command is used to replace template values in a specified file.
-
-#### Usage
+<summary><strong>Clone & replace</strong></summary>
 
 ```sh
-yankrun template -i <input-file>
+yankrun clone \
+  -r https://github.com/user/repo.git \
+  -i example.json \
+  -od ./clonedRepo \
+  -v
 ```
 
-#### Example
-
-```sh
-yankrun template -i example.json
-```
+Options:
+- `-r, --repo`: Git URL to clone
+- `-i, --input`: JSON/YAML with variables and ignore patterns
+- `-od, --outputDir`: directory to clone into
+- `-fl, --fileSizeLimit`: skip files larger than this (default `3 mb`)
+- `-sd, --startDelim`: template start delimiter (default `[[{[`)
+- `-ed, --endDelim`: template end delimiter (default `]}]]`)
 
 </details>
 
 <details>
-<summary><strong>Clone Command</strong></summary>
-
-The `clone` command clones a Git repository and replaces template values in the files.
-
-#### Usage
+<summary><strong>Template command (interactive)</strong></summary>
 
 ```sh
-yankrun clone -r <repo-url> -i <input-file> -od <output-dir> -fl <file-size-limit> -v
+# Analyze placeholders and prompt for values
+yankrun template -d ./target-dir -p
+
+# Use defaults or overrides
+yankrun template -d ./target-dir -i example.yaml -sd "[[{" -ed "}]]" -fl "5 mb" -p -v
 ```
 
-#### Options
+What it does:
+- Scans `-d` for placeholders between your delimiters (defaults: `[[{[`, `]}]]`).
+- Shows a summary of each placeholder with how many matches were found.
+- Pre-fills values from `-i` if provided; prompts for missing ones.
+- Applies replacements across the directory and prints a completion message.
 
-- `-r, --repo`: URL of the repository to clone.
-- `-i, --input`: Input file containing template values for replacement.
-- `-od, --outputDir`: Output directory to clone the repository.
-- `-fl, --fileSizeLimit`: File size limit to ignore replacements in files exceeding the limit (e.g., "5 mb").
-- `-v, --verbose`: Enable verbose mode for detailed output.
+</details>
 
-#### Example
+## Configuration
+
+<details>
+<summary><strong>Interactive setup</strong></summary>
 
 ```sh
-yankrun clone -r https://github.com/user/repo.git -i example.json -od ./clonedRepo -fl "5 mb" -v
+# Create or update ~/.yankrun/config.yaml
+yankrun setup
+
+# Example session
+Template start delimiter [[{[]: [[{[
+Template end delimiter ]}]][: ]}]]
+File size limit (e.g. 3 mb) [3 mb]: 3 mb
 ```
+
+Flags always override config defaults if provided.
 
 </details>
 
 <details>
-<summary><strong>Input File Format</strong></summary>
+<summary><strong>Show current config</strong></summary>
 
-The input file should be a JSON or YAML file with the following structure:
+```sh
+yankrun setup --show
+```
 
-#### JSON
+Outputs:
+
+```text
+start_delim: [[{[
+end_delim: ]}]]
+file_size_limit: 3 mb
+```
+
+</details>
+
+## Input file format
+
+<details>
+<summary><strong>JSON</strong></summary>
 
 ```json
 {
-    "ignore_patterns": [],
-    "variables": [
-        {
-            "key": "<!Company!>",
-            "value": "Your Company"
-        },
-        {
-            "key": "<!Team!>",
-            "value": "Your Team"
-        }
-    ]
+  "ignore_patterns": ["node_modules", "dist"],
+  "variables": [
+    { "key": "Company", "value": "Your Company" },
+    { "key": "Team", "value": "Your Team" }
+  ]
 }
 ```
 
-#### YAML
+Notes:
+- If your keys do not include delimiters, YankRun wraps them using your configured delimiters (default `[[{[` and `]}]]`). For example, `Company` becomes `[[{[Company]}]]`.
+- If your keys already include delimiters, they are used as-is.
+
+</details>
+
+<details>
+<summary><strong>YAML</strong></summary>
 
 ```yaml
-ignore_patterns: []
+ignore_patterns: [node_modules, dist]
 variables:
-  - key: "<!Company!>"
-    value: "Your Company"
-  - key: "<!Team!>"
-    value: "Your Team"
+  - key: Company
+    value: Your Company
+  - key: Team
+    value: Your Team
+```
+
+</details>
+
+## Examples
+
+<details>
+<summary><strong>Set custom delimiters per run</strong></summary>
+
+```sh
+yankrun clone -r <repo> -i example.yaml -od out -sd "[[{" -ed "}]]"
 ```
 
 </details>
 
 <details>
-<summary><strong>Verbose Mode</strong></summary>
-
-Enabling verbose mode provides detailed logs of the operations, including the number of replacements made in each file.
+<summary><strong>Skip large files</strong></summary>
 
 ```sh
-yankrun clone -r https://github.com/user/repo.git -i example.json -od ./clonedRepo -fl "5 mb" -v
+yankrun clone -r <repo> -i example.json -od out -fl "10 mb"
 ```
 
 </details>
 
 <details>
-<summary><strong>Setting File Size Limit</strong></summary>
-
-You can specify a file size limit to skip files that exceed the limit during the replacement process.
+<summary><strong>Verbose replacement report</strong></summary>
 
 ```sh
-yankrun clone -r https://github.com/user/repo.git -i example.json -od ./clonedRepo -fl "10 mb"
+yankrun clone -r <repo> -i example.json -od out -v
 ```
 
 </details>
 
-## Error Handling
+## Features
 
-YankRun will panic and stop execution if an error occurs during file reading, parsing, or writing operations. Ensure your input files and directories are correctly specified to avoid interruptions.
-
-## Contributing
-
-We welcome contributions! Please fork the repository and submit pull requests.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+- Template values replacement across a directory tree
+- Git clone with post-clone templating
+- Custom delimiters with smart wrapping
+- Size-based skipping (default 3 MB)
+- Verbose reporting
+- JSON/YAML inputs and ignore patterns
