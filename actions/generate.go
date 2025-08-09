@@ -28,11 +28,22 @@ func NewGenerateAction(fs services.FileSystem, cloner services.Cloner, parser se
 
 // Execute: choose template repo/branch, clone, remove .git, then optionally prompt and apply replacements
 func (a *GenerateAction) Execute(c *cli.Context) error {
+    // parse flags first for non-interactive allowance
+    interactivePrompt := c.Bool("interactive")
+    input := c.String("input")
+    startDelim := c.String("startDelim")
+    endDelim := c.String("endDelim")
+    fileSizeLimit := c.String("fileSizeLimit")
+    verbose := c.Bool("verbose")
+    outputDir := c.String("outputDir")
+    templateFilter := c.String("template")
+    branchFlag := c.String("branch")
+
     cfg, err := services.Load()
     if err != nil {
         return fmt.Errorf("failed to load config: %w", err)
     }
-    if len(cfg.Templates) == 0 && cfg.GitHub.User == "" && len(cfg.GitHub.Orgs) == 0 {
+    if len(cfg.Templates) == 0 && cfg.GitHub.User == "" && len(cfg.GitHub.Orgs) == 0 && templateFilter == "" {
         // Ask minimal discovery setup inline
         r := bufio.NewReader(os.Stdin)
         fmt.Println("No templates configured. Let's set where to search:")
@@ -47,13 +58,7 @@ func (a *GenerateAction) Execute(c *cli.Context) error {
         _ = services.Save(cfg)
     }
 
-    interactivePrompt := c.Bool("interactive")
-    input := c.String("input")
-    startDelim := c.String("startDelim")
-    endDelim := c.String("endDelim")
-    fileSizeLimit := c.String("fileSizeLimit")
-    verbose := c.Bool("verbose")
-    outputDir := c.String("outputDir")
+    // flags already parsed above
 
     // Fill defaults from config
     if startDelim == "" && cfg.StartDelim != "" { startDelim = cfg.StartDelim }
@@ -67,6 +72,10 @@ func (a *GenerateAction) Execute(c *cli.Context) error {
 
     // Aggregate configured repos + discovered GitHub repos
     repos := cfg.Templates
+    // Allow direct URL via --template for non-interactive shortcut
+    if templateFilter != "" && (strings.Contains(templateFilter, "://") || strings.HasPrefix(templateFilter, "git@")) {
+        repos = append(repos, domain.TemplateRepo{Name: templateFilter, URL: templateFilter, DefaultBranch: "main"})
+    }
     if cfg.GitHub.User != "" || len(cfg.GitHub.Orgs) > 0 {
         ghClient := services.NewGitHubClient()
         found, _ := ghClient.ListRepos(context.Background(), cfg.GitHub)
@@ -80,63 +89,84 @@ func (a *GenerateAction) Execute(c *cli.Context) error {
         return fmt.Errorf("no templates configured or found")
     }
 
-    helpers.Log.Info().Msg("Available templates:")
-    for i, t := range repos {
-        fmt.Printf("  [%d] %s  (%s)\n", i+1, t.Name, t.URL)
-        if t.Description != "" { fmt.Printf("      %s\n", t.Description) }
-    }
-    fmt.Printf("Filter templates by substring (press Enter to skip): ")
-    filter, _ := r.ReadString('\n')
-    filter = strings.TrimSpace(filter)
+    // Build filtered set non-interactively first
     var filtered []domain.TemplateRepo
-    if filter == "" { filtered = repos } else {
+    if templateFilter != "" {
         for _, t := range repos {
-            if strings.Contains(strings.ToLower(t.Name), strings.ToLower(filter)) || strings.Contains(strings.ToLower(t.URL), strings.ToLower(filter)) {
+            if strings.Contains(strings.ToLower(t.Name), strings.ToLower(templateFilter)) || strings.Contains(strings.ToLower(t.URL), strings.ToLower(templateFilter)) {
                 filtered = append(filtered, t)
             }
         }
-        if len(filtered) == 0 { filtered = repos }
+    } else {
+        filtered = repos
     }
-    for i, t := range filtered { fmt.Printf("  [%d] %s  (%s)\n", i+1, t.Name, t.URL) }
-    fmt.Printf("Select template [1-%d]: ", len(filtered))
-    selStr, _ := r.ReadString('\n')
-    selStr = strings.TrimSpace(selStr)
-    idx := 0
-    if selStr != "" { fmt.Sscanf(selStr, "%d", &idx); idx-- }
-    if idx < 0 || idx >= len(filtered) { idx = 0 }
-    chosen := filtered[idx]
+    if len(filtered) == 0 {
+        return fmt.Errorf("no templates matched filter")
+    }
+
+    var chosen domain.TemplateRepo
+    if !interactivePrompt && (templateFilter != "" && len(filtered) >= 1) {
+        chosen = filtered[0]
+    } else {
+        helpers.Log.Info().Msg("Available templates:")
+        for i, t := range repos { fmt.Printf("  [%d] %s  (%s)\n", i+1, t.Name, t.URL) }
+        fmt.Printf("Filter templates by substring (press Enter to skip): ")
+        filter, _ := r.ReadString('\n')
+        filter = strings.TrimSpace(filter)
+        filtered = nil
+        if filter == "" { filtered = repos } else {
+            for _, t := range repos {
+                if strings.Contains(strings.ToLower(t.Name), strings.ToLower(filter)) || strings.Contains(strings.ToLower(t.URL), strings.ToLower(filter)) {
+                    filtered = append(filtered, t)
+                }
+            }
+            if len(filtered) == 0 { filtered = repos }
+        }
+        for i, t := range filtered { fmt.Printf("  [%d] %s  (%s)\n", i+1, t.Name, t.URL) }
+        fmt.Printf("Select template [1-%d]: ", len(filtered))
+        selStr, _ := r.ReadString('\n')
+        selStr = strings.TrimSpace(selStr)
+        idx := 0
+        if selStr != "" { fmt.Sscanf(selStr, "%d", &idx); idx-- }
+        if idx < 0 || idx >= len(filtered) { idx = 0 }
+        chosen = filtered[idx]
+    }
 
     // Retrieve branches from remote and allow filtering by substring as user types
     branches, _ := a.cloner.ListRemoteBranches(chosen.URL)
     if len(branches) == 0 && chosen.DefaultBranch != "" {
         branches = []string{chosen.DefaultBranch}
     }
-
-    fmt.Printf("Type to filter branches (Enter to accept default [%s]): ", chosen.DefaultBranch)
-    branchFilter, _ := r.ReadString('\n')
-    branchFilter = strings.TrimSpace(branchFilter)
-    var candidates []string
-    if branchFilter == "" {
-        candidates = branches
-    } else {
-        for _, b := range branches {
-            if strings.Contains(strings.ToLower(b), strings.ToLower(branchFilter)) {
-                candidates = append(candidates, b)
-            }
+    // Non-interactive branch selection via flag
+    var br string
+    if !interactivePrompt {
+        if branchFlag != "" {
+            br = branchFlag
+        } else if chosen.DefaultBranch != "" {
+            br = chosen.DefaultBranch
+        } else {
+            br = "main"
         }
-        if len(candidates) == 0 { candidates = branches }
-    }
-
-    fmt.Println("Available branches:")
-    for i, b := range candidates { fmt.Printf("  [%d] %s\n", i+1, b) }
-    fmt.Printf("Select branch [1-%d] (Enter for default): ", len(candidates))
-    pick, _ := r.ReadString('\n')
-    pick = strings.TrimSpace(pick)
-    br := chosen.DefaultBranch
-    if pick != "" {
-        var idx int
-        if _, err := fmt.Sscanf(pick, "%d", &idx); err == nil && idx >= 1 && idx <= len(candidates) {
-            br = candidates[idx-1]
+    } else {
+        fmt.Printf("Type to filter branches (Enter to accept default [%s]): ", chosen.DefaultBranch)
+        branchFilter, _ := r.ReadString('\n')
+        branchFilter = strings.TrimSpace(branchFilter)
+        var candidates []string
+        if branchFilter == "" { candidates = branches } else {
+            for _, b := range branches {
+                if strings.Contains(strings.ToLower(b), strings.ToLower(branchFilter)) { candidates = append(candidates, b) }
+            }
+            if len(candidates) == 0 { candidates = branches }
+        }
+        fmt.Println("Available branches:")
+        for i, b := range candidates { fmt.Printf("  [%d] %s\n", i+1, b) }
+        fmt.Printf("Select branch [1-%d] (Enter for default): ", len(candidates))
+        pick, _ := r.ReadString('\n')
+        pick = strings.TrimSpace(pick)
+        br = chosen.DefaultBranch
+        if pick != "" {
+            var idx int
+            if _, err := fmt.Sscanf(pick, "%d", &idx); err == nil && idx >= 1 && idx <= len(candidates) { br = candidates[idx-1] }
         }
     }
 

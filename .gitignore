@@ -3,3 +3,7 @@ out.txt
 comp_code.txt
 .grepattern.yaml
 dist
+coverage/
+*.test
+/.cache
+/.tmp

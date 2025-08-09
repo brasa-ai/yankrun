@@ -53,3 +53,15 @@ var interactiveFlag = cli.BoolFlag{
     Name:  "interactive, prompt, p",
     Usage: "Prompt for values for discovered placeholders before applying",
 }
+
+var branchFlag = cli.StringFlag{
+    Name:  "branch, b",
+    Value: "",
+    Usage: "Branch to use for generate/clone when non-interactive",
+}
+
+var templateNameFlag = cli.StringFlag{
+    Name:  "template, templateName",
+    Value: "",
+    Usage: "Template name or URL substring to select non-interactively",
+}

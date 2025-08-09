@@ -45,13 +45,13 @@ func main() {
 			Name:    "clone",
 			Aliases: []string{"r"},
 			Usage:   "Clone a repo with template file replacements",
-            Flags:   []cli.Flag{repoFlag, inputFlag, outputDirFlag, verboseFlag, fileSizeLimitFlag, startDelimFlag, endDelimFlag, interactiveFlag},
+            Flags:   []cli.Flag{repoFlag, inputFlag, outputDirFlag, verboseFlag, fileSizeLimitFlag, startDelimFlag, endDelimFlag, interactiveFlag, branchFlag},
 			Action:  cloneAction.Execute,
 		},
         {
             Name:  "generate",
             Usage: "Interactively choose a template repo/branch and clone it as a new repo (removes .git)",
-            Flags: []cli.Flag{inputFlag, outputDirFlag, verboseFlag, fileSizeLimitFlag, startDelimFlag, endDelimFlag, interactiveFlag},
+            Flags: []cli.Flag{inputFlag, outputDirFlag, verboseFlag, fileSizeLimitFlag, startDelimFlag, endDelimFlag, interactiveFlag, templateNameFlag, branchFlag},
             Action: generateAction.Execute,
         },
         {
