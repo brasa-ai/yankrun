@@ -20,7 +20,8 @@ func main() {
 
 	// Pass them to actions
     templateAction := actions.NewTemplateAction(fs, parser, replacer)
-	cloneAction := actions.NewCloneAction(fs, parser, replacer, cloner)
+    cloneAction := actions.NewCloneAction(fs, parser, replacer, cloner)
+    generateAction := actions.NewGenerateAction(fs, cloner, parser, replacer)
 
     app := cli.NewApp()
 	app.Name = "yankrun"
@@ -48,9 +49,18 @@ func main() {
 			Action:  cloneAction.Execute,
 		},
         {
+            Name:  "generate",
+            Usage: "Interactively choose a template repo/branch and clone it as a new repo (removes .git)",
+            Flags: []cli.Flag{inputFlag, outputDirFlag, verboseFlag, fileSizeLimitFlag, startDelimFlag, endDelimFlag, interactiveFlag},
+            Action: generateAction.Execute,
+        },
+        {
             Name:  "setup",
-            Usage: "create or update ~/.yankrun/config.yaml (use --show to display)",
-            Flags: []cli.Flag{&cli.BoolFlag{Name: "show", Usage: "show current configuration"}},
+            Usage: "create or update ~/.yankrun/config.yaml (use --show to display, --reset to delete)",
+            Flags: []cli.Flag{
+                &cli.BoolFlag{Name: "show", Usage: "show current configuration"},
+                &cli.BoolFlag{Name: "reset", Usage: "delete ~/.yankrun/config.yaml"},
+            },
             Action: func(c *cli.Context) error {
                 return actions.RunSetup(os.Args[2:])
             },

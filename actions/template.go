@@ -45,8 +45,8 @@ func (t *TemplateAction) Execute(c *cli.Context) error {
     if startDelim == "" && cfg.StartDelim != "" { startDelim = cfg.StartDelim }
     if endDelim == "" && cfg.EndDelim != "" { endDelim = cfg.EndDelim }
     if fileSizeLimit == "" && cfg.FileSizeLimit != "" { fileSizeLimit = cfg.FileSizeLimit }
-    if startDelim == "" { startDelim = "[[{[" }
-    if endDelim == "" { endDelim = "]}]]" }
+    if startDelim == "" { startDelim = "[[" }
+    if endDelim == "" { endDelim = "]]" }
     if fileSizeLimit == "" { fileSizeLimit = "3 mb" }
 
     var parsed domain.InputReplacement

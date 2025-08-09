@@ -54,12 +54,8 @@ func (a *CloneAction) Execute(c *cli.Context) error {
     if fileSizeLimit == "" && cfg.FileSizeLimit != "" {
         fileSizeLimit = cfg.FileSizeLimit
     }
-    if startDelim == "" {
-        startDelim = "[[{["
-    }
-    if endDelim == "" {
-        endDelim = "]}]]"
-    }
+    if startDelim == "" { startDelim = "[[" }
+    if endDelim == "" { endDelim = "]]" }
     if fileSizeLimit == "" {
         fileSizeLimit = "3 mb"
     }

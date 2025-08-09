@@ -1,10 +1,13 @@
 package services
 
 import (
-	"fmt"
-	"strconv"
-	"strings"
-	"unicode"
+    "bytes"
+    "fmt"
+    "path/filepath"
+    "strconv"
+    "strings"
+    "unicode"
+    "unicode/utf8"
 
     "github.com/brasa-ai/yankrun/domain"
 )
@@ -50,6 +53,11 @@ func (fr *FileReplacer) walkAndAnalyze(dir string, fileSizeInBytes int64, startD
             return err
         }
         if info.IsDir() {
+            // Skip common directories
+            switch file.Name() {
+            case ".git", "node_modules", "vendor", "dist", "build", "bin":
+                continue
+            }
             if err := fr.walkAndAnalyze(path, fileSizeInBytes, startDelim, endDelim, result); err != nil {
                 return err
             }
@@ -61,6 +69,9 @@ func (fr *FileReplacer) walkAndAnalyze(dir string, fileSizeInBytes int64, startD
         content, err := fr.FileSystem.ReadFile(path)
         if err != nil {
             return err
+        }
+        if isBinary(content) || isBinaryByExt(path) {
+            continue
         }
         text := string(content)
         // simple scan for startDelim ... endDelim occurrences
@@ -96,6 +107,11 @@ func (fr *FileReplacer) replacePatterns(dir string, replacements domain.InputRep
 		}
 
         if info.IsDir() {
+            // Skip common directories
+            switch file.Name() {
+            case ".git", "node_modules", "vendor", "dist", "build", "bin":
+                continue
+            }
             err := fr.replacePatterns(path, replacements, fileSizeInBytes, startDelim, endDelim, verbose)
 			if err != nil {
 				return err
@@ -107,10 +123,13 @@ func (fr *FileReplacer) replacePatterns(dir string, replacements domain.InputRep
 			continue
 		}
 
-		content, err := fr.FileSystem.ReadFile(path)
+        content, err := fr.FileSystem.ReadFile(path)
 		if err != nil {
 			return err
 		}
+        if isBinary(content) || isBinaryByExt(path) {
+            continue
+        }
 
         newContent := string(content)
 		numReplacements := 0
@@ -141,6 +160,34 @@ func (fr *FileReplacer) replacePatterns(dir string, replacements domain.InputRep
 	}
 
 	return nil
+}
+
+func isBinaryByExt(path string) bool {
+    ext := strings.ToLower(filepath.Ext(path))
+    switch ext {
+    case ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".pdf", ".zip", ".gz", ".tar", ".tgz", ".xz", ".rar", ".7z", ".exe", ".dll", ".so":
+        return true
+    }
+    return false
+}
+
+func isBinary(data []byte) bool {
+    if len(data) == 0 { return false }
+    if bytes.IndexByte(data, 0x00) >= 0 { return true }
+    if utf8.Valid(data) {
+        nonPrintable := 0
+        for _, b := range data {
+            if b == '\n' || b == '\r' || b == '\t' { continue }
+            if b < 0x20 || b == 0x7f {
+                nonPrintable++
+                if nonPrintable > 8 { return true }
+            }
+        }
+        return false
+    }
+    highBytes := 0
+    for _, b := range data { if b >= 0x80 { highBytes++; if highBytes > 16 { return true } } }
+    return false
 }
 
 func (fr *FileReplacer) stringToBytes(size string) (int64, error) {

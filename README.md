@@ -27,6 +27,39 @@ sudo mv yankrun-linux-amd64 /usr/local/bin/yankrun
 </details>
 
 <details>
+<summary><strong>GitHub discovery config</strong></summary>
+
+You can auto-discover template repos from your GitHub user and/or orgs. All fields are optional; using only orgs is fine.
+
+```yaml
+# ~/.yankrun/config.yaml (excerpt)
+github:
+  orgs: ["brasa-ai", "your-org"]          # one or more orgs (optional)
+  user: "your-user"                         # your GitHub user (optional)
+  topic: "templates"                        # filter repos by topic (optional)
+  prefix: "template-"                       # filter repos by name prefix (optional)
+  include_private: true                      # include private repos (requires token)
+  token: "GITHUB_TOKEN"                      # optional; for higher rate limits/private
+```
+
+Notes:
+- If nothing is configured yet, `yankrun generate` will ask for user/orgs inline and save them.
+- When both `user` and `orgs` are set, results are merged.
+
+</details>
+
+<details>
+<summary><strong>Reset configuration</strong></summary>
+
+```sh
+yankrun setup --reset
+```
+
+Deletes `~/.yankrun/config.yaml`.
+
+</details>
+
+<details>
 <summary><strong>Linux/macOS (ARM64)</strong></summary>
 
 ```sh
@@ -55,7 +88,7 @@ Move-Item -Path yankrun-windows-amd64/yankrun-windows-amd64.exe -Destination yan
 
 ```sh
 git clone https://github.com/brasa-ai/yankrun.git
-cd yankrun.axebyte
+cd yankrun
 go build -o yankrun .
 sudo mv yankrun /usr/local/bin/
 ```
@@ -74,34 +107,61 @@ go install github.com/brasa-ai/yankrun@latest
 <summary><strong>Clone & replace (interactive and non-interactive)</strong></summary>
 
 ```sh
-# Non-interactive: provide values via -i
+# Non-interactive: provide values via --input
 yankrun clone \
-  -r https://github.com/brasa-ai/template-tester.git \
-  -i examples/values.json \
-  -od ./clonedRepo \
-  -v
+  --repo https://github.com/brasa-ai/template-tester.git \
+  --input examples/values.json \
+  --outputDir ./clonedRepo \
+  --verbose
 
 # Interactive: prompt for discovered placeholders after clone
 yankrun clone \
-  -r git@github.com:brasa-ai/template-tester.git \
-  -od ./clonedRepo \
-  -p -v
+  --repo git@github.com:brasa-ai/template-tester.git \
+  --outputDir ./clonedRepo \
+  --prompt --verbose
 ```
 
 What it does:
 - Clones the repository
-- Scans for placeholders between your delimiters (defaults: `[[{[`, `]}]]`)
+- Scans for placeholders between your delimiters (defaults: `[[`, `]]`)
 - If `-p/--prompt` is set, shows a summary and prompts for values; otherwise uses values from `-i` if provided
 - Applies replacements and logs completion
 
 Options:
-- `-r, --repo`: Git URL to clone
-- `-i, --input`: JSON/YAML with variables (used in non-interactive or as defaults in interactive)
-- `-od, --outputDir`: directory to clone into
-- `-fl, --fileSizeLimit`: skip files larger than this (default `3 mb`)
-- `-sd, --startDelim`: template start delimiter (default `[[{[`)
-- `-ed, --endDelim`: template end delimiter (default `]}]]`)
-- `-p, --prompt` (alias: `--interactive`): ask for values before applying
+- `--repo`: Git URL to clone
+- `--input`: JSON/YAML with variables (used in non-interactive or as defaults in interactive)
+- `--outputDir`: directory to clone into
+- `--fileSizeLimit`: skip files larger than this (default `3 mb`)
+- `--startDelim`: template start delimiter (default `[[`)
+- `--endDelim`: template end delimiter (default `]]`)
+- `--prompt` (alias: `--interactive`): ask for values before applying
+
+</details>
+
+<details>
+<summary><strong>Generate (choose template repo & branch)</strong></summary>
+
+```sh
+# Configure templates in ~/.yankrun/config.yaml
+# templates:
+#   - name: "Go App"
+#     url: "git@github.com:brasa-ai/template-tester.git"
+#     description: "Example templates"
+#     default_branch: "main"
+
+# Run interactive generator
+yankrun generate --prompt --verbose
+
+# Non-interactive values file and custom delimiters
+yankrun generate --input examples/values.json --startDelim "[[{" --endDelim "}]]" --fileSizeLimit "5 mb"
+```
+
+What it does:
+- Loads configured templates from `~/.yankrun/config.yaml`
+- Lets you choose a template and branch
+- Clones the selected branch
+- Removes `.git` so you start a fresh repo
+- Scans placeholders, optionally prompts (`-p`), then applies replacements
 
 </details>
 
@@ -110,14 +170,14 @@ Options:
 
 ```sh
 # Analyze placeholders and prompt for values
-yankrun template -d ./examples/project -p
+yankrun template --dir ./examples/project --prompt
 
 # Use defaults or overrides (YAML values)
-yankrun template -d ./examples/project -i examples/values.yaml -sd "[[{" -ed "}]]" -fl "5 mb" -p -v
+yankrun template --dir ./examples/project --input examples/values.yaml --startDelim "[[{" --endDelim "}]]" --fileSizeLimit "5 mb" --prompt --verbose
 ```
 
 What it does:
-- Scans `-d` for placeholders between your delimiters (defaults: `[[{[`, `]}]]`).
+- Scans `--dir` for placeholders between your delimiters (defaults: `[[`, `]]`).
 - Shows a summary of each placeholder with how many matches were found.
 - Pre-fills values from `-i` if provided; prompts for missing ones.
 - Applies replacements across the directory and prints a completion message.
@@ -134,8 +194,8 @@ What it does:
 yankrun setup
 
 # Example session
-Template start delimiter [[{[]: [[{[
-Template end delimiter ]}]][: ]}]]
+Template start delimiter [[]: [[
+Template end delimiter ]]: ]]
 File size limit (e.g. 3 mb) [3 mb]: 3 mb
 ```
 
@@ -153,8 +213,8 @@ yankrun setup --show
 Outputs:
 
 ```text
-start_delim: [[{[
-end_delim: ]}]]
+start_delim: [[
+end_delim: ]]
 file_size_limit: 3 mb
 ```
 
@@ -169,14 +229,17 @@ file_size_limit: 3 mb
 {
   "ignore_patterns": ["node_modules", "dist"],
   "variables": [
-    { "key": "Company", "value": "Your Company" },
-    { "key": "Team", "value": "Your Team" }
+    { "key": "APP_NAME", "value": "TemplateTester" },
+    { "key": "PROJECT_NAME", "value": "DemoProject" },
+    { "key": "USER_NAME", "value": "axebyte" },
+    { "key": "USER_EMAIL", "value": "user@example.com" },
+    { "key": "VERSION", "value": "1.0.0" }
   ]
 }
 ```
 
 Notes:
-- If your keys do not include delimiters, YankRun wraps them using your configured delimiters (default `[[{[` and `]}]]`). For example, `Company` becomes `[[{[Company]}]]`.
+- If your keys do not include delimiters, YankRun wraps them using your configured delimiters. For example, with start `[[` and end `]]`, `APP_NAME` becomes `[[APP_NAME]]`.
 - If your keys already include delimiters, they are used as-is.
 
 </details>
@@ -187,10 +250,16 @@ Notes:
 ```yaml
 ignore_patterns: [node_modules, dist]
 variables:
-  - key: Company
-    value: Your Company
-  - key: Team
-    value: Your Team
+  - key: APP_NAME
+    value: TemplateTester
+  - key: PROJECT_NAME
+    value: DemoProject
+  - key: USER_NAME
+    value: axebyte
+  - key: USER_EMAIL
+    value: user@example.com
+  - key: VERSION
+    value: "1.0.0"
 ```
 
 </details>
@@ -201,7 +270,7 @@ variables:
 <summary><strong>Set custom delimiters per run</strong></summary>
 
 ```sh
-yankrun clone -r git@github.com:brasa-ai/template-tester.git -i examples/values.yaml -od out -sd "[[{" -ed "}]]"
+yankrun clone --repo git@github.com:brasa-ai/template-tester.git --input examples/values.yaml --outputDir out --startDelim "[[{" --endDelim "}]]"
 ```
 
 </details>
@@ -210,7 +279,7 @@ yankrun clone -r git@github.com:brasa-ai/template-tester.git -i examples/values.
 <summary><strong>Skip large files</strong></summary>
 
 ```sh
-yankrun clone -r git@github.com:brasa-ai/template-tester.git -i examples/values.json -od out -fl "10 mb"
+yankrun clone --repo git@github.com:brasa-ai/template-tester.git --input examples/values.json --outputDir out --fileSizeLimit "10 mb"
 ```
 
 </details>
@@ -219,8 +288,74 @@ yankrun clone -r git@github.com:brasa-ai/template-tester.git -i examples/values.
 <summary><strong>Verbose replacement report</strong></summary>
 
 ```sh
-yankrun clone -r <repo> -i example.json -od out -v
+yankrun clone --repo <repo> --input example.json --outputDir out --verbose
 ```
+
+## Why YankRun? Practical problems it solves
+
+<details>
+<summary><strong>1) Bootstrap a new project from a template</strong></summary>
+
+Problem: You maintain a template repo (CI, lint, base code). You want to create a new project with your org/app names filled in, without carrying over the template’s git history.
+
+Solution:
+
+```sh
+# Choose template + branch, clone, remove .git, scan tokens, fill values
+yankrun generate --prompt --verbose
+```
+
+Outcome: Fresh repo with placeholders (e.g., [[NAME]], [[PROJECT_NAME]]) replaced and no template history.
+
+</details>
+
+<details>
+<summary><strong>2) Rollout org-wide config changes across many files</strong></summary>
+
+Problem: You have dozens of files with tokens for company, team, emails, or versions. Manual search/replace is error-prone.
+
+Solution:
+
+```sh
+# Define values once
+cat > values.json << 'EOF'
+{
+  "variables": [
+    { "key": "COMPANY", "value": "Acme Corp" },
+    { "key": "TEAM", "value": "Platform" },
+    { "key": "VERSION", "value": "2.1.0" }
+  ]
+}
+EOF
+
+# Apply everywhere safely with size limits
+yankrun template --dir . --input values.json --fileSizeLimit "5 mb" --verbose
+```
+
+Outcome: Consistent updates with a per-file replacement report, skipping large/binary files.
+
+</details>
+
+<details>
+<summary><strong>3) Customize a sample app quickly (no prompts)</strong></summary>
+
+Problem: You want a non-interactive pipeline (CI/CD) to stamp out a project with predetermined values.
+
+Solution:
+
+```sh
+yankrun clone \
+  --repo git@github.com:brasa-ai/template-tester.git \
+  --input examples/values.json \
+  --outputDir ./my-app \
+  --startDelim "[[{" --endDelim "}]]" \
+  --verbose
+```
+
+Outcome: Fully templated project ready for commit in automated flows.
+
+</details>
+
 
 </details>
 

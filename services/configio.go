@@ -51,4 +51,11 @@ func Save(cfg *domain.Config) error {
     return enc.Encode(cfg)
 }
 
+// Reset deletes the configuration file entirely
+func Reset() error {
+    path, err := configPath()
+    if err != nil { return err }
+    return os.Remove(path)
+}
+
 

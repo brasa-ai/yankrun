@@ -39,14 +39,14 @@ var fileSizeLimitFlag = cli.StringFlag{
 
 var startDelimFlag = cli.StringFlag{
     Name:  "startDelim, sd",
-    Value: "[[{[",
-    Usage: "Template start delimiter (default [[{[))",
+    Value: "[[",
+    Usage: "Template start delimiter (default [[)",
 }
 
 var endDelimFlag = cli.StringFlag{
     Name:  "endDelim, ed",
-    Value: "]}]]",
-    Usage: "Template end delimiter (default ]}]])",
+    Value: "]]",
+    Usage: "Template end delimiter (default ]])",
 }
 
 var interactiveFlag = cli.BoolFlag{
