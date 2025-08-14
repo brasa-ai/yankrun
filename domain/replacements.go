@@ -8,4 +8,9 @@ type Replacement struct {
 type InputReplacement struct {
 	Variables  []Replacement `json:"variables" yaml:"variables"`
 	IgnorePath []string      `json:"ignore_patterns" yaml:"ignore_patterns"`
+	Functions  Functions     `json:"functions,omitempty" yaml:"functions,omitempty"`
+}
+
+type Functions struct {
+	APPLY_REPLACE map[string]string `json:"APPLY_REPLACE,omitempty" yaml:"APPLY_REPLACE,omitempty"`
 }

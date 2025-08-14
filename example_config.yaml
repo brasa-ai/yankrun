@@ -1,0 +1,34 @@
+# ~/.yankrun/config.yaml example
+start_delim: "[["
+end_delim: "]]"
+file_size_limit: "3 mb"
+
+# Global functions that apply to any template with APPLY_REPLACE in its name
+functions:
+  APPLY_REPLACE:
+    "-": "_"      # Replace hyphens with underscores
+    " ": "-"      # Replace spaces with hyphens
+    ".": "_"      # Replace dots with underscores
+
+# Global ignore patterns
+ignore_patterns:
+  - "node_modules"
+  - "dist"
+  - "build"
+  - ".git"
+
+# Template repositories
+templates:
+  - name: "Go App"
+    url: "git@github.com:brasa-ai/template-tester.git"
+    description: "Example Go application template"
+    default_branch: "main"
+
+# GitHub discovery settings
+github:
+  user: "your-username"
+  orgs: ["your-org"]
+  topic: "templates"
+  prefix: "template-"
+  include_private: true
+  token: "your-github-token"

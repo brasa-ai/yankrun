@@ -233,14 +233,25 @@ file_size_limit: 3 mb
     { "key": "PROJECT_NAME", "value": "DemoProject" },
     { "key": "USER_NAME", "value": "axebyte" },
     { "key": "USER_EMAIL", "value": "user@example.com" },
-    { "key": "VERSION", "value": "1.0.0" }
-  ]
+    { "key": "VERSION", "value": "1.0.0" },
+    { "key": "APP_NAME_APPLY_UPPERCASE", "value": "my-app" },
+    { "key": "PROJECT_NAME_APPLY_DOWNCASE", "value": "MyProject" },
+    { "key": "SLUG_APPLY_REPLACE", "value": "my-project-name" }
+  ],
+  "functions": {
+    "APPLY_REPLACE": {
+      "-": "_",
+      " ": "-"
+    }
+  }
 }
 ```
 
 Notes:
-- If your keys do not include delimiters, YankRun wraps them using your configured delimiters. For example, with start `[[` and end `]]`, `APP_NAME` becomes `[[APP_NAME]]`.
+- If your keys do not include delimiters, YankRun wraps them using your configured delimiters. For example, with start `[[` and end `]]`, `APP_NAME` becomes `my-app`.
 - If your keys already include delimiters, they are used as-is.
+- **Smart Transformations**: Template names containing `APPLY_UPPERCASE` or `APPLY_DOWNCASE` automatically transform values to upper or lowercase.
+- **Custom Replace Functions**: Use `APPLY_REPLACE` in the functions section to define custom string replacements (e.g., `-` to `_`, spaces to `-`).
 
 </details>
 
@@ -260,7 +271,108 @@ variables:
     value: user@example.com
   - key: VERSION
     value: "1.0.0"
+  - key: APP_NAME_APPLY_UPPERCASE
+    value: my-app
+  - key: PROJECT_NAME_APPLY_DOWNCASE
+    value: MyProject
+  - key: SLUG_APPLY_REPLACE
+    value: my-project-name
+functions:
+  APPLY_REPLACE:
+    "-": "_"
+    " ": "-"
 ```
+
+</details>
+
+## Smart Template Features
+
+**How Transformations Work**: Transformations are only applied to template names that contain the corresponding keywords. This means:
+- `APP_NAME_APPLY_UPPERCASE` gets uppercase transformation
+- `APP_NAME_APPLY_DOWNCASE` gets lowercase transformation  
+- `SLUG_APPLY_REPLACE` gets custom replacement functions
+- `APP_NAME_APPLY_UPPERCASE_APPLY_REPLACE` gets BOTH uppercase AND replacement functions
+- `SLUG` (without keywords) gets NO transformations
+
+**Example**:
+```yaml
+variables:
+  - key: "APP_NAME"                           # No transformations
+    value: "my-app"
+  - key: "APP_NAME_APPLY_UPPERCASE"           # Uppercase only
+    value: "my-app"
+  - key: "APP_NAME_APPLY_REPLACE"             # Replace only
+    value: "my-app"
+  - key: "APP_NAME_APPLY_UPPERCASE_APPLY_REPLACE"  # Both transformations
+    value: "my-project-name"
+functions:
+  APPLY_REPLACE:
+    "-": "_"
+```
+
+Results:
+- `APP_NAME` → `my-app` (no change)
+- `APP_NAME_APPLY_UPPERCASE` → `MY-APP` (uppercase)
+- `APP_NAME_APPLY_REPLACE` → `my-app` (no hyphens to replace)
+- `APP_NAME_APPLY_UPPERCASE_APPLY_REPLACE` → `MY_PROJECT_NAME` (uppercase + replace)
+
+<details>
+<summary><strong>Automatic Case Transformations</strong></summary>
+
+YankRun automatically applies transformations based on template names:
+
+```yaml
+variables:
+  - key: "APP_NAME_APPLY_UPPERCASE"
+    value: "my-app"
+  - key: "PROJECT_NAME_APPLY_DOWNCASE" 
+    value: "MyProject"
+```
+
+Results:
+- `APP_NAME_APPLY_UPPERCASE` → `MY-APP`
+- `PROJECT_NAME_APPLY_DOWNCASE` → `myproject`
+
+</details>
+
+<details>
+<summary><strong>Custom String Replacements</strong></summary>
+
+Define custom replacement rules in the `functions` section. These only apply to templates with "APPLY_REPLACE" in their name:
+
+```yaml
+variables:
+  - key: "SLUG_APPLY_REPLACE"
+    value: "my-project-name"
+functions:
+  APPLY_REPLACE:
+    "-": "_"      # Replace hyphens with underscores
+    " ": "-"      # Replace spaces with hyphens
+```
+
+Result: `my-project-name` → `my_project_name`
+
+**Important**: The `SLUG` template (without APPLY_REPLACE) would remain unchanged even if functions are defined.
+
+</details>
+
+<details>
+<summary><strong>Combined Transformations</strong></summary>
+
+You can combine multiple transformations by including multiple keywords in the template name:
+
+```yaml
+variables:
+  - key: "APP_NAME_APPLY_UPPERCASE_APPLY_REPLACE"
+    value: "my-project-name"
+functions:
+  APPLY_REPLACE:
+    "-": "_"
+```
+
+Result: `my-project-name` → `MY_PROJECT_NAME` (uppercase + replace)
+
+**Important**: APPLY_REPLACE functions only apply to templates with "APPLY_REPLACE" in their name, not globally to all values.
 
 </details>
 
@@ -356,6 +468,32 @@ Outcome: Fully templated project ready for commit in automated flows.
 
 </details>
 
+<details>
+<summary><strong>4) Smart transformations for consistent naming</strong></summary>
+
+Problem: You need consistent naming conventions across files (uppercase for constants, lowercase for variables, slugified for URLs).
+
+Solution:
+
+```yaml
+variables:
+  - key: "APP_NAME_APPLY_UPPERCASE"
+    value: "my-app"
+  - key: "PROJECT_NAME_APPLY_DOWNCASE"
+    value: "MyProject"
+  - key: "SLUG_APPLY_REPLACE"
+    value: "my project name"
+functions:
+  APPLY_REPLACE:
+    " ": "-"
+```
+
+Outcome: Automatic generation of `MY-APP`, `myproject`, and `my-project-name` from single input values.
+
+**Note**: Each transformation only applies to templates containing the corresponding keyword in their name.
+
+</details>
+
 
 </details>
 
@@ -367,3 +505,4 @@ Outcome: Fully templated project ready for commit in automated flows.
 - Size-based skipping (default 3 MB)
 - Verbose reporting
 - JSON/YAML inputs and ignore patterns
+- **Smart Template Transformations**: Automatic case conversion and custom string replacements (only applied to templates with matching keywords)

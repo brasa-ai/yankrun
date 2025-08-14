@@ -1,0 +1,14 @@
+ignore_patterns: []
+variables:
+  - key: "APP_NAME"
+    value: "my-app"
+  - key: "APP_NAME_APPLY_UPPERCASE"
+    value: "my-app"
+  - key: "APP_NAME_APPLY_REPLACE"
+    value: "my-app"
+  - key: "APP_NAME_APPLY_UPPERCASE_APPLY_REPLACE"
+    value: "my-project-name"
+functions:
+  APPLY_REPLACE:
+    "-": "_"
+    " ": "-"
