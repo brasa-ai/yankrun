@@ -1,0 +1,11 @@
+start_delim: "[["
+end_delim: "]]"
+file_size_limit: "1 mb"
+functions:
+  APPLY_REPLACE:
+    "-": "_"
+    " ": "-"
+    ".": "_"
+ignore_patterns:
+  - "node_modules"
+  - "dist"

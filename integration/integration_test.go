@@ -78,12 +78,12 @@ func TestCloneNonInteractive(t *testing.T) {
         if strings.HasSuffix(lower, ".png") || strings.HasSuffix(lower, ".jpg") || strings.HasSuffix(lower, ".jpeg") { return nil }
         b, err := os.ReadFile(path)
         if err == nil {
-            if bytes.Contains(b, []byte("[[APP_NAME]]")) { foundPlaceholder = true }
+            if bytes.Contains(b, []byte("my-app")) { foundPlaceholder = true }
             if bytes.Contains(b, []byte("TemplateTester")) { foundValue = true }
         }
         return nil
     })
-    if foundPlaceholder { t.Fatalf("placeholder [[APP_NAME]] still present after clone replacements") }
+    if foundPlaceholder { t.Fatalf("placeholder my-app still present after clone replacements") }
     if !foundValue { t.Fatalf("expected TemplateTester present after clone replacements") }
 }
 
@@ -107,8 +107,8 @@ func TestTemplateNonInteractive(t *testing.T) {
 
     // Add a node_modules file and a large file to verify skipping behavior
     _ = os.MkdirAll(filepath.Join(work, "node_modules"), 0700)
-    _ = os.WriteFile(filepath.Join(work, "node_modules", "keep.txt"), []byte("[[APP_NAME]]"), 0600)
-    _ = os.WriteFile(filepath.Join(work, "large.txt"), []byte(strings.Repeat("[[APP_NAME]]", 20000)), 0600)
+    _ = os.WriteFile(filepath.Join(work, "node_modules", "keep.txt"), []byte("my-app"), 0600)
+    _ = os.WriteFile(filepath.Join(work, "large.txt"), []byte(strings.Repeat("my-app", 20000)), 0600)
 
     // now template the directory non-interactively
     tmpl := exec.Command(bin, "template",
@@ -131,11 +131,11 @@ func TestTemplateNonInteractive(t *testing.T) {
         }
         b, err := os.ReadFile(path)
         if err == nil {
-            if bytes.Contains(b, []byte("[[APP_NAME]]")) { hasToken = true }
+            if bytes.Contains(b, []byte("my-app")) { hasToken = true }
             if bytes.Contains(b, []byte("MyApp")) { hasMyApp = true }
         }
         return nil
     })
-    if hasToken { t.Fatalf("placeholder [[APP_NAME]] still present in templated files") }
+    if hasToken { t.Fatalf("placeholder my-app still present in templated files") }
     if !hasMyApp { t.Fatalf("expected MyApp present in templated files") }
 }

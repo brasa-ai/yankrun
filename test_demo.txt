@@ -1,0 +1,4 @@
+Regular: my-app
+Uppercase only: MY-APP
+Replace only: my-app
+Both transformations: MY-PROJECT-NAME

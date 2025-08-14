@@ -8,6 +8,24 @@
         {
             "key": "<!Team!>",
             "value": "Your Team"
+        },
+        {
+            "key": "<!APP_NAME_APPLY_UPPERCASE!>",
+            "value": "my-app"
+        },
+        {
+            "key": "<!PROJECT_NAME_APPLY_DOWNCASE!>",
+            "value": "MyProject"
+        },
+        {
+            "key": "<!SLUG_APPLY_REPLACE!>",
+            "value": "my-project-name"
         }
-    ]
+    ],
+    "functions": {
+        "APPLY_REPLACE": {
+            "-": "_",
+            " ": "-"
+        }
+    }
 }

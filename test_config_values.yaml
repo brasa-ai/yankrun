@@ -1,0 +1,10 @@
+ignore_patterns: []
+variables:
+  - key: "APP_NAME_APPLY_REPLACE"
+    value: "my-app-name"
+  - key: "PROJECT_NAME_APPLY_REPLACE"
+    value: "my project name"
+  - key: "SLUG_APPLY_REPLACE"
+    value: "my.project.name"
+  - key: "REGULAR_NAME"
+    value: "my-regular-name"

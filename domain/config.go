@@ -6,6 +6,8 @@ type Config struct {
     FileSizeLimit string `yaml:"file_size_limit"`
     Templates     []TemplateRepo `yaml:"templates"`
     GitHub        GitHubConfig   `yaml:"github"`
+    Functions    Functions      `yaml:"functions,omitempty"`
+    IgnorePath   []string       `yaml:"ignore_patterns,omitempty"`
 }
 
 type TemplateRepo struct {
