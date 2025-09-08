@@ -1,8 +1,10 @@
 package domain
 
 type Replacement struct {
-	Key   string `json:"key" yaml:"key"`
-	Value string `json:"value" yaml:"value"`
+	Key             string   `json:"key" yaml:"key"`
+	Value           string   `json:"value" yaml:"value"`
+	BaseKey         string   `json:"-" yaml:"-"` // Not marshalled, used internally
+	Transformations []string `json:"-" yaml:"-"` // Not marshalled, used internally
 }
 
 type InputReplacement struct {
