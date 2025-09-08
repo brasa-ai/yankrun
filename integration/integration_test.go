@@ -111,9 +111,7 @@ func TestTemplateNonInteractive(t *testing.T) {
 	bin := buildBinary(t)
 	// reuse clone to prepare directory
 	work := t.TempDir()
-	vals := `variables:
-	 - key: APP_NAME
-	   value: MyApp`
+	vals := `variables: [{key: APP_NAME, value: MyApp}]`
 	valsPath := writeFile(t, t.TempDir(), "values.yaml", vals)
 	// clone without replacements
 	cmd := exec.Command(bin, "clone",

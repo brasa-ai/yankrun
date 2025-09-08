@@ -11,6 +11,16 @@
 
 Template smarter: clone repos and replace tokens safely with size limits, custom delimiters, and JSON/YAML inputs.
 
+## Features
+
+-   **Template values replacement** across a directory tree
+-   **Git clone** with post-clone templating
+-   **Custom delimiters** with smart wrapping
+-   **Size-based skipping** (default 3 MB)
+-   **Verbose reporting**
+-   **JSON/YAML inputs** and ignore patterns
+-   **Transformation functions** (`toUpperCase`, `toLowerCase`, `gsub`)
+
 ## Install
 
 ### From Release
@@ -359,11 +369,6 @@ Outcome: Fully templated project ready for commit in automated flows.
 
 </details>
 
-## Features
+## Transformation Functions
 
-- Template values replacement across a directory tree
-- Git clone with post-clone templating
-- Custom delimiters with smart wrapping
-- Size-based skipping (default 3 MB)
-- Verbose reporting
-- JSON/YAML inputs and ignore patterns
+YankRun supports transformation functions that can be applied to placeholders to modify their values. For more details, see the [Transformation Functions documentation](doc/functions.md).
