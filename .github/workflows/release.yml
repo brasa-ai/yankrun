@@ -23,7 +23,7 @@ jobs:
           check-latest: true
 
       - name: Build binaries
-        run: make build
+        run: VERSION=${{ github.event.inputs.tag }} make build
 
       - name: Create archives
         run: |

@@ -14,6 +14,8 @@ type FileSystem interface {
 	Stat(path string) (os.FileInfo, error)
 	EnsureDir(path string) error
 	Join(elem ...string) string
+	Remove(path string) error
+	Base(path string) string
 }
 
 type OsFileSystem struct{}
@@ -57,4 +59,12 @@ func (o *OsFileSystem) EnsureDir(dir string) error {
 
 func (o *OsFileSystem) Join(elem ...string) string {
 	return filepath.Join(elem...)
+}
+
+func (o *OsFileSystem) Remove(path string) error {
+	return os.Remove(path)
+}
+
+func (o *OsFileSystem) Base(path string) string {
+	return filepath.Base(path)
 }

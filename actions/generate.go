@@ -38,6 +38,7 @@ func (a *GenerateAction) Execute(c *cli.Context) error {
     outputDir := c.String("outputDir")
     templateFilter := c.String("template")
     branchFlag := c.String("branch")
+    processTemplates := c.Bool("processTemplates")
 
     cfg, err := services.Load()
     if err != nil {
@@ -250,6 +251,15 @@ func (a *GenerateAction) Execute(c *cli.Context) error {
     if err := a.replacer.ReplaceInDir(outputDir, final, fileSizeLimit, startDelim, endDelim, verbose); err != nil {
         return err
     }
+    
+    // Process .tpl files if requested
+    if processTemplates {
+        if err := a.replacer.ProcessTemplateFiles(outputDir, final, fileSizeLimit, startDelim, endDelim, verbose); err != nil {
+            return err
+        }
+        helpers.Log.Info().Msg("Template file processing complete ✔")
+    }
+    
     helpers.Log.Info().Msg("Templating complete ✔")
     return nil
 }
