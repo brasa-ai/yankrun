@@ -20,6 +20,7 @@ Template smarter: clone repos and replace tokens safely with size limits, custom
 -   **Verbose reporting**
 -   **JSON/YAML inputs** and ignore patterns
 -   **Transformation functions** (`toUpperCase`, `toLowerCase`, `gsub`)
+-   **Template file processing** (`.tpl` files processed and renamed)
 
 ## Install
 
@@ -145,6 +146,7 @@ Options:
 - `--startDelim`: template start delimiter (default `[[`)
 - `--endDelim`: template end delimiter (default `]]`)
 - `--prompt` (alias: `--interactive`): ask for values before applying
+- `--processTemplates` (alias: `--pt`): process `.tpl` files by evaluating templates and removing `.tpl` suffix
 
 </details>
 
@@ -191,6 +193,35 @@ What it does:
 - Shows a summary of each placeholder with how many matches were found.
 - Pre-fills values from `-i` if provided; prompts for missing ones.
 - Applies replacements across the directory and prints a completion message.
+
+</details>
+
+<details>
+<summary><strong>Template File Processing</strong></summary>
+
+YankRun can process `.tpl` files by evaluating their template content and removing the `.tpl` suffix. This is useful when you have template files that should be processed and renamed.
+
+```sh
+# Process .tpl files in addition to regular templating
+yankrun template --dir ./project --input values.json --processTemplates --verbose
+
+# Clone and process .tpl files
+yankrun clone --repo https://github.com/user/template.git --input values.yaml --processTemplates
+```
+
+What it does:
+- Finds all files ending with `.tpl` in the target directory (recursively)
+- Evaluates template placeholders in these files using the same replacement logic
+- Creates new files without the `.tpl` suffix containing the processed content
+- Removes the original `.tpl` files
+- Skips `.tpl` files in ignored directories (`.git`, `node_modules`, `vendor`, etc.)
+
+Example:
+- `README.tpl` → `README` (with placeholders replaced)
+- `config.tpl` → `config` (with placeholders replaced)
+- `src/main.tpl` → `src/main` (with placeholders replaced)
+
+The `--processTemplates` flag is optional and defaults to `false` to maintain backward compatibility.
 
 </details>
 

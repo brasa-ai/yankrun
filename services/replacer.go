@@ -16,6 +16,7 @@ import (
 type Replacer interface {
 	ReplaceInDir(dir string, replacements domain.InputReplacement, fileSizeLimit string, startDelim string, endDelim string, verbose bool) error
 	AnalyzeDir(dir string, fileSizeLimit string, startDelim string, endDelim string) (map[string]int, error)
+	ProcessTemplateFiles(dir string, replacements domain.InputReplacement, fileSizeLimit string, startDelim string, endDelim string, verbose bool) error
 }
 
 type FileReplacer struct {
@@ -98,6 +99,135 @@ func (fr *FileReplacer) walkAndAnalyze(dir string, fileSizeInBytes int64, startD
 			text = text[end+len(endDelim):]
 		}
 	}
+	return nil
+}
+
+// ProcessTemplateFiles processes .tpl files by evaluating templates and removing .tpl suffix
+func (fr *FileReplacer) ProcessTemplateFiles(dir string, replacements domain.InputReplacement, fileSizeLimit string, startDelim string, endDelim string, verbose bool) error {
+	fileSizeInBytes, err := fr.stringToBytes(fileSizeLimit)
+	if err != nil {
+		return err
+	}
+
+	return fr.processTemplateFilesRecursive(dir, replacements, fileSizeInBytes, startDelim, endDelim, verbose)
+}
+
+func (fr *FileReplacer) processTemplateFilesRecursive(dir string, replacements domain.InputReplacement, fileSizeInBytes int64, startDelim string, endDelim string, verbose bool) error {
+	files, err := fr.FileSystem.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		path := fr.FileSystem.Join(dir, file.Name())
+		info, err := fr.FileSystem.Stat(path)
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			// Skip common directories
+			switch file.Name() {
+			case ".git", "node_modules", "vendor", "dist", "build", "bin":
+				continue
+			}
+			err := fr.processTemplateFilesRecursive(path, replacements, fileSizeInBytes, startDelim, endDelim, verbose)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		// Only process .tpl files
+		if !strings.HasSuffix(file.Name(), ".tpl") {
+			continue
+		}
+
+		if !fr.checkFileSize(info, fileSizeInBytes, verbose) {
+			continue
+		}
+
+		content, err := fr.FileSystem.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if isBinary(content) {
+			continue
+		}
+
+		// Process the template content
+		newContent := string(content)
+		numReplacements := 0
+		
+		// Create a map for quick lookup of replacement values by base key
+		replacementValues := make(map[string]string)
+		for _, r := range replacements.Variables {
+			replacementValues[r.Key] = r.Value
+		}
+
+		// Find all placeholders in the content
+		placeholderRegex := regexp.MustCompile(regexp.QuoteMeta(startDelim) + `(.*?)` + regexp.QuoteMeta(endDelim))
+
+		// Find all matches
+		matches := placeholderRegex.FindAllStringSubmatchIndex(newContent, -1)
+
+		// Process matches in reverse order to avoid issues with index changes
+		for i := len(matches) - 1; i >= 0; i-- {
+			match := matches[i]
+			fullMatchStart, fullMatchEnd := match[0], match[1]
+			placeholderContentStart, placeholderContentEnd := match[2], match[3]
+
+			placeholderWithTransforms := newContent[placeholderContentStart:placeholderContentEnd]
+
+			baseKey, transformations, err := fr.parsePlaceholder(placeholderWithTransforms)
+			if err != nil {
+				if verbose {
+					fmt.Printf("Error parsing placeholder '%s': %v\n", placeholderWithTransforms, err)
+				}
+				continue
+			}
+
+			// Get the base value
+			baseValue, ok := replacementValues[baseKey]
+			if !ok {
+				// If no replacement value is found, skip this placeholder
+				continue
+			}
+
+			// Apply transformations
+			finalValue, err := fr.applyTransformations(baseValue, transformations)
+			if err != nil {
+				if verbose {
+					fmt.Printf("Error applying transformations for '%s': %v\n", placeholderWithTransforms, err)
+				}
+				continue
+			}
+
+			// Replace the full placeholder (including delimiters) with the final value
+			newContent = newContent[:fullMatchStart] + finalValue + newContent[fullMatchEnd:]
+			numReplacements++
+		}
+
+		// Create new filename without .tpl suffix
+		newPath := strings.TrimSuffix(path, ".tpl")
+		
+		// Write the processed content to the new file
+		err = fr.FileSystem.WriteFile(newPath, []byte(newContent), 0644)
+		if err != nil {
+			return err
+		}
+
+		// Remove the original .tpl file
+		err = fr.FileSystem.Remove(path)
+		if err != nil {
+			return err
+		}
+
+		if verbose && numReplacements != 0 {
+			fmt.Printf("Processed template %s -> %s (%d replacements)\n", file.Name(), fr.FileSystem.Base(newPath), numReplacements)
+		}
+	}
+
 	return nil
 }
 

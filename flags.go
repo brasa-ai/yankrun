@@ -65,3 +65,8 @@ var templateNameFlag = cli.StringFlag{
     Value: "",
     Usage: "Template name or URL substring to select non-interactively",
 }
+
+var processTemplatesFlag = cli.BoolFlag{
+    Name:  "processTemplates, pt",
+    Usage: "Process .tpl files by evaluating templates and removing .tpl suffix",
+}
