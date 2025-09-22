@@ -15,7 +15,7 @@ import (
 
 type Replacer interface {
 	ReplaceInDir(dir string, replacements domain.InputReplacement, fileSizeLimit string, startDelim string, endDelim string, verbose bool) error
-	AnalyzeDir(dir string, fileSizeLimit string, startDelim string, endDelim string) (map[string]int, error)
+	AnalyzeDir(dir string, fileSizeLimit string, startDelim string, endDelim string, onlyTemplates bool) (map[string]int, error)
 	ProcessTemplateFiles(dir string, replacements domain.InputReplacement, fileSizeLimit string, startDelim string, endDelim string, verbose bool) error
 }
 
@@ -33,17 +33,17 @@ func (fr *FileReplacer) ReplaceInDir(dir string, replacements domain.InputReplac
 }
 
 // AnalyzeDir returns a map of placeholder -> count discovered in files within size limit
-func (fr *FileReplacer) AnalyzeDir(dir string, fileSizeLimit string, startDelim string, endDelim string) (map[string]int, error) {
+func (fr *FileReplacer) AnalyzeDir(dir string, fileSizeLimit string, startDelim string, endDelim string, onlyTemplates bool) (map[string]int, error) {
 	result := map[string]int{}
 	fileSizeInBytes, err := fr.stringToBytes(fileSizeLimit)
 	if err != nil {
 		return result, err
 	}
-	err = fr.walkAndAnalyze(dir, fileSizeInBytes, startDelim, endDelim, result)
+	err = fr.walkAndAnalyze(dir, fileSizeInBytes, startDelim, endDelim, result, onlyTemplates)
 	return result, err
 }
 
-func (fr *FileReplacer) walkAndAnalyze(dir string, fileSizeInBytes int64, startDelim string, endDelim string, result map[string]int) error {
+func (fr *FileReplacer) walkAndAnalyze(dir string, fileSizeInBytes int64, startDelim string, endDelim string, result map[string]int, onlyTemplates bool) error {
 	files, err := fr.FileSystem.ReadDir(dir)
 	if err != nil {
 		return err
@@ -60,9 +60,14 @@ func (fr *FileReplacer) walkAndAnalyze(dir string, fileSizeInBytes int64, startD
 			case ".git", "node_modules", "vendor", "dist", "build", "bin":
 				continue
 			}
-			if err := fr.walkAndAnalyze(path, fileSizeInBytes, startDelim, endDelim, result); err != nil {
+			if err := fr.walkAndAnalyze(path, fileSizeInBytes, startDelim, endDelim, result, onlyTemplates); err != nil {
 				return err
 			}
+			continue
+		}
+
+		// Skip non-.tpl files when onlyTemplates is true
+		if onlyTemplates && !strings.HasSuffix(file.Name(), ".tpl") {
 			continue
 		}
 		if !fr.checkFileSize(info, fileSizeInBytes, false) {

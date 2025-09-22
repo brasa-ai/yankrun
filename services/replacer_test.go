@@ -323,3 +323,86 @@ Mixed: prod_value`
 		t.Errorf("app content mismatch. Expected:\n%s\nGot:\n%s", expectedContent, string(appContent))
 	}
 }
+
+func TestOnlyTemplatesFunctionality(t *testing.T) {
+	// Create a temporary directory for testing
+	tempDir := t.TempDir()
+
+	// Create test files
+	tplContent := `Hello [[NAME]]!
+This is a template file with [[PROJECT_NAME]].`
+	regularContent := `This is a regular file with [[NAME]] placeholder.`
+
+	// Write test files
+	tplFile := filepath.Join(tempDir, "readme.tpl")
+	regularFile := filepath.Join(tempDir, "regular.txt")
+	anotherRegularFile := filepath.Join(tempDir, "config.json")
+
+	if err := os.WriteFile(tplFile, []byte(tplContent), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+	if err := os.WriteFile(regularFile, []byte(regularContent), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+	if err := os.WriteFile(anotherRegularFile, []byte(`{"name": "[[NAME]]"}`), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	// Create replacer instance
+	fs := &OsFileSystem{}
+	replacer := &FileReplacer{FileSystem: fs}
+
+	// Define replacements
+	replacements := domain.InputReplacement{
+		Variables: []domain.Replacement{
+			{Key: "NAME", Value: "John"},
+			{Key: "PROJECT_NAME", Value: "TestProject"},
+		},
+	}
+
+	// Test 1: Process only .tpl files (simulating onlyTemplates=true)
+	err := replacer.ProcessTemplateFiles(tempDir, replacements, "3 mb", "[[", "]]", false)
+	if err != nil {
+		t.Fatalf("Failed to process template files: %v", err)
+	}
+
+	// Check that .tpl file was processed and renamed
+	processedFile := filepath.Join(tempDir, "readme")
+	if _, err := os.Stat(processedFile); os.IsNotExist(err) {
+		t.Error("Processed file should exist")
+	}
+
+	// Check that original .tpl file was removed
+	if _, err := os.Stat(tplFile); !os.IsNotExist(err) {
+		t.Error("Original .tpl file should have been removed")
+	}
+
+	// Check that regular files were NOT processed
+	regularContentAfter, err := os.ReadFile(regularFile)
+	if err != nil {
+		t.Fatalf("Failed to read regular file: %v", err)
+	}
+	if string(regularContentAfter) != regularContent {
+		t.Errorf("Regular file should not have been processed. Expected: %s, Got: %s", regularContent, string(regularContentAfter))
+	}
+
+	// Check that JSON file was NOT processed
+	jsonContentAfter, err := os.ReadFile(anotherRegularFile)
+	if err != nil {
+		t.Fatalf("Failed to read JSON file: %v", err)
+	}
+	if string(jsonContentAfter) != `{"name": "[[NAME]]"}` {
+		t.Errorf("JSON file should not have been processed. Expected: %s, Got: %s", `{"name": "[[NAME]]"}`, string(jsonContentAfter))
+	}
+
+	// Check that the processed .tpl file has correct content
+	processedContent, err := os.ReadFile(processedFile)
+	if err != nil {
+		t.Fatalf("Failed to read processed file: %v", err)
+	}
+	expectedContent := `Hello John!
+This is a template file with TestProject.`
+	if string(processedContent) != expectedContent {
+		t.Errorf("Processed content mismatch. Expected: %s, Got: %s", expectedContent, string(processedContent))
+	}
+}

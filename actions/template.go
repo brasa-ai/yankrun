@@ -33,9 +33,15 @@ func (t *TemplateAction) Execute(c *cli.Context) error {
 	endDelim := c.String("endDelim")
 	fileSizeLimit := c.String("fileSizeLimit")
 	processTemplates := c.Bool("processTemplates")
+	onlyTemplates := c.Bool("onlyTemplates")
 
 	if dir == "" {
 		return fmt.Errorf("--dir is required for template command")
+	}
+
+	// Validate flag combination
+	if onlyTemplates && !processTemplates {
+		return fmt.Errorf("--onlyTemplates requires --processTemplates to be set")
 	}
 
 	// Load defaults from config
@@ -72,7 +78,7 @@ func (t *TemplateAction) Execute(c *cli.Context) error {
 	}
 
 	// Analyze placeholders in dir
-	counts, err := t.replacer.AnalyzeDir(dir, fileSizeLimit, startDelim, endDelim)
+	counts, err := t.replacer.AnalyzeDir(dir, fileSizeLimit, startDelim, endDelim, onlyTemplates)
 	if err != nil {
 		return err
 	}
@@ -130,8 +136,11 @@ func (t *TemplateAction) Execute(c *cli.Context) error {
 		return nil
 	}
 
-	if err := t.replacer.ReplaceInDir(dir, final, fileSizeLimit, startDelim, endDelim, verbose); err != nil {
-		return err
+	// Skip regular templating if onlyTemplates is set
+	if !onlyTemplates {
+		if err := t.replacer.ReplaceInDir(dir, final, fileSizeLimit, startDelim, endDelim, verbose); err != nil {
+			return err
+		}
 	}
 
 	// Process .tpl files if requested
