@@ -21,9 +21,9 @@ var outputDirFlag = cli.StringFlag{
 }
 
 var dirFlag = cli.StringFlag{
-    Name:  "dir, d",
-    Value: "",
-    Usage: "Target directory for templating (used by template command)",
+	Name:  "dir, d",
+	Value: "",
+	Usage: "Target directory for templating (used by template command)",
 }
 
 var verboseFlag = cli.BoolFlag{
@@ -33,40 +33,45 @@ var verboseFlag = cli.BoolFlag{
 
 var fileSizeLimitFlag = cli.StringFlag{
 	Name:  "fileSizeLimit, fl",
-    Value: "3 mb",
+	Value: "3 mb",
 	Usage: "File size limit to ignore replacements from files that exceed the limit",
 }
 
 var startDelimFlag = cli.StringFlag{
-    Name:  "startDelim, sd",
-    Value: "[[",
-    Usage: "Template start delimiter (default [[)",
+	Name:  "startDelim, sd",
+	Value: "[[",
+	Usage: "Template start delimiter (default [[)",
 }
 
 var endDelimFlag = cli.StringFlag{
-    Name:  "endDelim, ed",
-    Value: "]]",
-    Usage: "Template end delimiter (default ]])",
+	Name:  "endDelim, ed",
+	Value: "]]",
+	Usage: "Template end delimiter (default ]])",
 }
 
 var interactiveFlag = cli.BoolFlag{
-    Name:  "interactive, prompt, p",
-    Usage: "Prompt for values for discovered placeholders before applying",
+	Name:  "interactive, prompt, p",
+	Usage: "Prompt for values for discovered placeholders before applying",
 }
 
 var branchFlag = cli.StringFlag{
-    Name:  "branch, b",
-    Value: "",
-    Usage: "Branch to use for generate/clone when non-interactive",
+	Name:  "branch, b",
+	Value: "",
+	Usage: "Branch to use for generate/clone when non-interactive",
 }
 
 var templateNameFlag = cli.StringFlag{
-    Name:  "template, templateName",
-    Value: "",
-    Usage: "Template name or URL substring to select non-interactively",
+	Name:  "template, templateName",
+	Value: "",
+	Usage: "Template name or URL substring to select non-interactively",
 }
 
 var processTemplatesFlag = cli.BoolFlag{
-    Name:  "processTemplates, pt",
-    Usage: "Process .tpl files by evaluating templates and removing .tpl suffix",
+	Name:  "processTemplates, pt",
+	Usage: "Process .tpl files by evaluating templates and removing .tpl suffix",
+}
+
+var onlyTemplatesFlag = cli.BoolFlag{
+	Name:  "onlyTemplates, ot",
+	Usage: "When used with --processTemplates, only process .tpl files and ignore all other files",
 }

@@ -147,6 +147,7 @@ Options:
 - `--endDelim`: template end delimiter (default `]]`)
 - `--prompt` (alias: `--interactive`): ask for values before applying
 - `--processTemplates` (alias: `--pt`): process `.tpl` files by evaluating templates and removing `.tpl` suffix
+- `--onlyTemplates` (alias: `--ot`): when used with `--processTemplates`, only process `.tpl` files and ignore all other files
 
 </details>
 
@@ -207,6 +208,9 @@ yankrun template --dir ./project --input values.json --processTemplates --verbos
 
 # Clone and process .tpl files
 yankrun clone --repo https://github.com/user/template.git --input values.yaml --processTemplates
+
+# Process ONLY .tpl files (ignore all other files)
+yankrun template --dir ./project --input values.json --processTemplates --onlyTemplates --verbose
 ```
 
 What it does:
@@ -222,6 +226,8 @@ Example:
 - `src/main.tpl` → `src/main` (with placeholders replaced)
 
 The `--processTemplates` flag is optional and defaults to `false` to maintain backward compatibility.
+
+**Note**: The `--onlyTemplates` flag requires `--processTemplates` to be set. When used together, YankRun will skip processing all non-`.tpl` files and only process template files.
 
 </details>
 

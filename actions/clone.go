@@ -40,6 +40,7 @@ func (a *CloneAction) Execute(c *cli.Context) error {
 	endDelim := c.String("endDelim")
 	interactive := c.Bool("interactive")
 	processTemplates := c.Bool("processTemplates")
+	onlyTemplates := c.Bool("onlyTemplates")
 
 	// Load defaults from config when flags not provided
 	cfg, _ := services.Load()
@@ -65,6 +66,11 @@ func (a *CloneAction) Execute(c *cli.Context) error {
 		fileSizeLimit = "3 mb"
 	}
 
+	// Validate flag combination
+	if onlyTemplates && !processTemplates {
+		return fmt.Errorf("--onlyTemplates requires --processTemplates to be set")
+	}
+
 	if err := a.fs.EnsureDir(outputDir); err != nil {
 		return err
 	}
@@ -86,7 +92,7 @@ func (a *CloneAction) Execute(c *cli.Context) error {
 	}
 
 	// Analyze placeholders in cloned directory
-	counts, err := a.replacer.AnalyzeDir(outputDir, fileSizeLimit, startDelim, endDelim)
+	counts, err := a.replacer.AnalyzeDir(outputDir, fileSizeLimit, startDelim, endDelim, onlyTemplates)
 	if err != nil {
 		return err
 	}
@@ -139,8 +145,11 @@ func (a *CloneAction) Execute(c *cli.Context) error {
 		final = provided
 	}
 
-	if err := a.replacer.ReplaceInDir(outputDir, final, fileSizeLimit, startDelim, endDelim, verbose); err != nil {
-		return err
+	// Skip regular templating if onlyTemplates is set
+	if !onlyTemplates {
+		if err := a.replacer.ReplaceInDir(outputDir, final, fileSizeLimit, startDelim, endDelim, verbose); err != nil {
+			return err
+		}
 	}
 
 	// Process .tpl files if requested
